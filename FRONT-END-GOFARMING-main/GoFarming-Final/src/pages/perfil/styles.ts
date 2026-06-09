@@ -1,0 +1,130 @@
+import { StyleSheet } from 'react-native';
+
+const cores = {
+  fundo: '#09111f',
+  superficie: '#101a2d',
+  borda: '#1d2d47',
+  texto: '#ecf3ff',
+  textoSecundario: '#9ab0cf',
+  destaque: '#7c3aed',
+  perigo: '#ef4444',
+};
+
+export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: cores.fundo,
+  },
+  content: {
+    paddingBottom: 48,
+  },
+
+  // Cabeçalho
+  cabecalho: {
+    alignItems: 'center',
+    paddingTop: 36,
+    paddingBottom: 24,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#16223a',
+    borderWidth: 2,
+    borderColor: '#2a3f60',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  avatarTexto: {
+    color: cores.texto,
+    fontSize: 34,
+    fontWeight: '800',
+  },
+  nome: {
+    color: cores.texto,
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  email: {
+    color: cores.textoSecundario,
+    fontSize: 13,
+  },
+
+  // Stats
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: cores.superficie,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: cores.borda,
+    marginBottom: 28,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  statValor: {
+    color: cores.texto,
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  statLabel: {
+    color: cores.textoSecundario,
+    fontSize: 12,
+  },
+  statDivisor: {
+    width: 1,
+    backgroundColor: cores.borda,
+    marginVertical: 12,
+  },
+
+  // Seção
+  secaoTitulo: {
+    color: '#4a6384',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 6,
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
+
+  // Bloco
+  bloco: {
+    backgroundColor: cores.superficie,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: cores.borda,
+    marginBottom: 24,
+  },
+
+  // Linha
+  linha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: cores.borda,
+    gap: 14,
+  },
+  linhaUltima: {
+    borderBottomWidth: 0,
+  },
+  linhaIcone: {
+    width: 28,
+    alignItems: 'center',
+  },
+  linhaTitulo: {
+    flex: 1,
+    color: cores.texto,
+    fontSize: 15,
+  },
+  linhaPerigo: {
+    color: cores.perigo,
+  },
+});
