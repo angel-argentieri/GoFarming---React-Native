@@ -4,19 +4,19 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CustomTabBar from '../components/CustomTabBar';
 
-// Tab screens
+// Telas da aba
 import Painel from '../pages/dashboard';
 import Scan from '../pages/scan';
 import Config from '../pages/config';
 import Perfil from '../pages/perfil';
 import MeuJardim from '../pages/jardim';
 
-// Auth screens
+// Autenticação
 import Login from '../pages/login';
 import Cadastro from '../pages/cadastro';
 import { useAuth } from '../context/AuthContext';
 
-// Extra screens
+// Telas extras
 import AlertasPage from '../pages/alertas';
 import AssistentePlantas from '../pages/assistente';
 import CadastroPlanta from '../pages/plantas/cadastro';
@@ -24,6 +24,7 @@ import DetalhePlanta from '../pages/plantas/detalhe';
 import HistoricoCuidados from '../pages/plantas/historico';
 import IrrigacaoPlanta from '../pages/plantas/irrigacao';
 import SaudePlanta from '../pages/plantas/saude';
+import Explorar from '../pages/explorar';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -57,6 +58,7 @@ function AppStack() {
       <Stack.Screen name="HistoricoCuidados" component={HistoricoCuidados} />
       <Stack.Screen name="Irrigacao" component={IrrigacaoPlanta} />
       <Stack.Screen name="SaudePlanta" component={SaudePlanta} />
+      <Stack.Screen name="Explorar" component={Explorar} />
     </Stack.Navigator>
   );
 }
