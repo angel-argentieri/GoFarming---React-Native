@@ -1,13 +1,3 @@
-// src/pages/scan/index.tsx
-//
-// Dependências já instaladas no projeto:
-//   expo-camera  ✓  (já está no package.json)
-//
-// Serviços que este arquivo importa (coloque-os em src/services/):
-//   plantIdService.ts      → identificarPlanta()
-//   cropHealthService.ts   → verificarSaude()
-//   notificationService.ts → agendarNotificacaoRega(), DiaDaSemana
-
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -41,25 +31,9 @@ import styles, {
   FRAME_SIZE,
 } from './styles';
 
-// ─────────────────────────────────────────────
-// TIPOS INTERNOS
-// ─────────────────────────────────────────────
+type FaseScanner = 'idle' | 'analisando' | 'resultado';
 
-type FaseScanner =
-  | 'idle'       // câmera ativa, aguardando captura
-  | 'analisando' // chamadas em paralelo para as APIs
-  | 'resultado'; // exibe card de resultado
-
-type DiaConfig = {
-  label: string;
-  valor: DiaDaSemana;
-};
-
-// ─────────────────────────────────────────────
-// DADOS ESTÁTICOS
-// ─────────────────────────────────────────────
-
-const DIAS: DiaConfig[] = [
+const DIAS: { label: string; valor: DiaDaSemana }[] = [
   { label: 'D', valor: 1 },
   { label: 'S', valor: 2 },
   { label: 'T', valor: 3 },
@@ -69,69 +43,57 @@ const DIAS: DiaConfig[] = [
   { label: 'S', valor: 7 },
 ];
 
-// ─────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────
-
-function corStatus(status: ResultadoSaude['status']): string {
-  if (status === 'healthy')   return COR_VERDE;
+function corStatus(status: ResultadoSaude['status']) {
+  if (status === 'healthy') return COR_VERDE;
   if (status === 'attention') return '#fdb022';
   return COR_ALERTA;
 }
 
-function labelStatus(status: ResultadoSaude['status']): string {
-  if (status === 'healthy')   return 'Saudável';
+function labelStatus(status: ResultadoSaude['status']) {
+  if (status === 'healthy') return 'Saudável';
   if (status === 'attention') return 'Atenção';
   return 'Crítico';
 }
-
-// ─────────────────────────────────────────────
-// COMPONENTE PRINCIPAL
-// ─────────────────────────────────────────────
 
 export default function ScanIA() {
   const { adicionarPlanta } = useGarden();
   const [permissao, pedirPermissao] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
-  // Estado do fluxo
-  const [fase, setFase]           = useState<FaseScanner>('idle');
-  const [fotoUri, setFotoUri]     = useState<string | null>(null);
-  const [identificacao, setIdent] = useState<ResultadoIdentificacao | null>(null);
-  const [saude, setSaude]         = useState<ResultadoSaude | null>(null);
+  const [fase, setFase] = useState<FaseScanner>('idle');
+  const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [identificacao, setIdentificacao] = useState<ResultadoIdentificacao | null>(null);
+  const [saude, setSaude] = useState<ResultadoSaude | null>(null);
 
-  // Bottom sheet "Adicionar ao jardim"
   const [sheetVisivel, setSheetVisivel] = useState(false);
-  const [nomeEdit, setNomeEdit]         = useState('');
-  const [especieEdit, setEspecieEdit]   = useState('');
-  const [localEdit, setLocalEdit]       = useState('');
-  const [obsEdit, setObsEdit]           = useState('');
-  const [horarioRega, setHorarioRega]   = useState('08:00');
-  const [diasSelecionados, setDias]     = useState<DiaDaSemana[]>([2, 4, 6]);
-  const [salvando, setSalvando]         = useState(false);
+  const [nomeEdit, setNomeEdit] = useState('');
+  const [especieEdit, setEspecieEdit] = useState('');
+  const [localEdit, setLocalEdit] = useState('');
+  const [obsEdit, setObsEdit] = useState('');
+  const [horarioRega, setHorarioRega] = useState('08:00');
+  const [diasSelecionados, setDiasSelecionados] = useState<DiaDaSemana[]>([2, 4, 6]);
+  const [salvando, setSalvando] = useState(false);
 
-  // Animação da linha laser
   const laserAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (fase === 'idle') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(laserAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
-          Animated.timing(laserAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
-        ]),
-      ).start();
-    } else {
+    if (fase !== 'idle') {
       laserAnim.stopAnimation();
+      return;
     }
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(laserAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(laserAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+      ]),
+    ).start();
   }, [fase]);
 
   const laserTranslate = laserAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-FRAME_SIZE / 2 + 8, FRAME_SIZE / 2 - 8],
   });
-
-  // ── Captura e análise ──────────────────────
 
   const capturar = useCallback(async () => {
     if (!cameraRef.current || fase !== 'idle') return;
@@ -154,11 +116,10 @@ export default function ScanIA() {
         verificarSaude(foto.base64),
       ]);
 
-      setIdent(resultIdent);
+      setIdentificacao(resultIdent);
       setSaude(resultSaude);
       setFase('resultado');
 
-      // Pré-preenche o bottom sheet
       setNomeEdit(resultIdent.nome);
       setEspecieEdit(resultIdent.especie);
       setObsEdit('');
@@ -170,17 +131,13 @@ export default function ScanIA() {
     }
   }, [fase]);
 
-  // ── Toggle dia da semana ───────────────────
-
-  const toggleDia = useCallback((dia: DiaDaSemana) => {
-    setDias((prev) =>
-      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia],
+  function toggleDia(dia: DiaDaSemana) {
+    setDiasSelecionados((prev) =>
+      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
     );
-  }, []);
+  }
 
-  // ── Salvar no jardim + agendar notificação ─
-
-  const salvarNoJardim = useCallback(async () => {
+  async function salvarNoJardim() {
     if (!nomeEdit.trim()) {
       Alert.alert('Campo obrigatório', 'Informe o nome da planta.');
       return;
@@ -210,22 +167,17 @@ export default function ScanIA() {
       setSheetVisivel(false);
       setFase('idle');
       setFotoUri(null);
-      setIdent(null);
+      setIdentificacao(null);
       setSaude(null);
 
-      Alert.alert(
-        '🌱 Adicionada!',
-        `${nomeEdit.trim()} foi salva no seu jardim e as notificações foram agendadas.`,
-      );
+      Alert.alert('🌱 Adicionada!', `${nomeEdit.trim()} foi salva no seu jardim.`);
     } catch (erro) {
       const msg = erro instanceof Error ? erro.message : 'Erro ao salvar.';
       Alert.alert('Erro', msg);
     } finally {
       setSalvando(false);
     }
-  }, [nomeEdit, especieEdit, localEdit, obsEdit, horarioRega, diasSelecionados, adicionarPlanta]);
-
-  // ── Permissão ──────────────────────────────
+  }
 
   if (!permissao) return <View style={styles.container} />;
 
@@ -246,57 +198,38 @@ export default function ScanIA() {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // RENDER PRINCIPAL
-  // ─────────────────────────────────────────────
-
   return (
     <View style={styles.container}>
 
-      {/* ── Câmera real ── */}
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        animateShutter={false}
-      />
+      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" animateShutter={false} />
 
-      {/* ── Overlay (máscara ao redor do frame) ── */}
+      {/* Overlay com frame do scanner */}
       <View style={styles.overlay} pointerEvents="none">
         <View style={styles.overlayBanda} />
-
         <View style={styles.overlayMeio}>
           <View style={styles.overlayLateral} />
-
-          {/* Frame do scanner */}
           <View style={styles.frame}>
             <View style={[styles.canto, styles.cantoTL]} />
             <View style={[styles.canto, styles.cantoTR]} />
             <View style={[styles.canto, styles.cantoBL]} />
             <View style={[styles.canto, styles.cantoBR]} />
 
-            {/* Laser — só em idle */}
             {fase === 'idle' && (
-              <Animated.View
-                style={[styles.laser, { transform: [{ translateY: laserTranslate }] }]}
-              />
+              <Animated.View style={[styles.laser, { transform: [{ translateY: laserTranslate }] }]} />
             )}
 
-            {/* Spinner — durante análise */}
             {fase === 'analisando' && (
               <View style={styles.spinnerBox}>
                 <ActivityIndicator size="large" color={COR_NEON} />
               </View>
             )}
           </View>
-
           <View style={styles.overlayLateral} />
         </View>
-
         <View style={styles.overlayBanda} />
       </View>
 
-      {/* ── Texto de status ── */}
+      {/* Texto de instrução */}
       {fase !== 'resultado' && (
         <View style={styles.statusBox} pointerEvents="none">
           <Text style={styles.statusTexto}>
@@ -308,7 +241,7 @@ export default function ScanIA() {
         </View>
       )}
 
-      {/* ── Botão de captura ── */}
+      {/* Botão de captura */}
       {fase === 'idle' && (
         <View style={styles.capturaWrapper}>
           <TouchableOpacity style={styles.btnCaptura} onPress={capturar} activeOpacity={0.8}>
@@ -317,7 +250,7 @@ export default function ScanIA() {
         </View>
       )}
 
-      {/* ── Card de resultado ── */}
+      {/* Card de resultado */}
       {fase === 'resultado' && identificacao && saude && (
         <View style={styles.resultadoCard}>
           {fotoUri ? (
@@ -329,19 +262,13 @@ export default function ScanIA() {
           )}
 
           <View style={styles.resultadoInfo}>
-            <Text style={styles.resultadoNome} numberOfLines={1}>
-              {identificacao.nome}
-            </Text>
-            <Text style={styles.resultadoEspecie} numberOfLines={1}>
-              {identificacao.especie}
-            </Text>
+            <Text style={styles.resultadoNome} numberOfLines={1}>{identificacao.nome}</Text>
+            <Text style={styles.resultadoEspecie} numberOfLines={1}>{identificacao.especie}</Text>
 
             <View style={styles.resultadoBadges}>
               <View style={styles.badge}>
                 <Ionicons name="search" size={11} color={COR_NEON} />
-                <Text style={styles.badgeTexto}>
-                  {Math.round(identificacao.confianca * 100)}%
-                </Text>
+                <Text style={styles.badgeTexto}>{Math.round(identificacao.confianca * 100)}%</Text>
               </View>
               <View style={[styles.badge, { borderColor: corStatus(saude.status) }]}>
                 <MaterialCommunityIcons name="heart-pulse" size={11} color={corStatus(saude.status)} />
@@ -360,11 +287,7 @@ export default function ScanIA() {
           </View>
 
           <View style={styles.resultadoAcoes}>
-            <TouchableOpacity
-              style={styles.btnAdicionar}
-              onPress={() => setSheetVisivel(true)}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.btnAdicionar} onPress={() => setSheetVisivel(true)} activeOpacity={0.8}>
               <Ionicons name="add" size={20} color={COR_PRETO_ABSOLUTO} />
             </TouchableOpacity>
             <TouchableOpacity
@@ -378,7 +301,7 @@ export default function ScanIA() {
         </View>
       )}
 
-      {/* ── Bottom Sheet: Adicionar ao jardim ── */}
+      {/* Bottom Sheet: adicionar ao jardim */}
       <Modal
         visible={sheetVisivel}
         animationType="slide"
@@ -402,15 +325,14 @@ export default function ScanIA() {
               <Text style={styles.sheetTitulo}>Adicionar ao jardim</Text>
               <Text style={styles.sheetSub}>Confirme os dados identificados pela IA</Text>
 
-              {/* Campos */}
               <View style={styles.sheetGrupo}>
                 <Text style={styles.sheetLabel}>NOME DA PLANTA</Text>
                 <TextInput
                   style={styles.sheetInput}
                   value={nomeEdit}
                   onChangeText={setNomeEdit}
-                  placeholderTextColor={COR_CINZA_CLARO}
                   placeholder="Ex.: Costela-de-Adão"
+                  placeholderTextColor={COR_CINZA_CLARO}
                 />
               </View>
 
@@ -420,8 +342,8 @@ export default function ScanIA() {
                   style={styles.sheetInput}
                   value={especieEdit}
                   onChangeText={setEspecieEdit}
-                  placeholderTextColor={COR_CINZA_CLARO}
                   placeholder="Ex.: Monstera deliciosa"
+                  placeholderTextColor={COR_CINZA_CLARO}
                 />
               </View>
 
@@ -431,8 +353,8 @@ export default function ScanIA() {
                   style={styles.sheetInput}
                   value={localEdit}
                   onChangeText={setLocalEdit}
-                  placeholderTextColor={COR_CINZA_CLARO}
                   placeholder="Ex.: Varanda, Sala…"
+                  placeholderTextColor={COR_CINZA_CLARO}
                 />
               </View>
 
@@ -442,13 +364,12 @@ export default function ScanIA() {
                   style={[styles.sheetInput, styles.sheetTextArea]}
                   value={obsEdit}
                   onChangeText={setObsEdit}
-                  placeholderTextColor={COR_CINZA_CLARO}
                   placeholder="Dicas de cuidado, luz preferida…"
+                  placeholderTextColor={COR_CINZA_CLARO}
                   multiline
                 />
               </View>
 
-              {/* Horário de rega */}
               <View style={styles.sheetGrupo}>
                 <Text style={styles.sheetLabel}>HORÁRIO DA NOTIFICAÇÃO DE REGA</Text>
                 <View style={styles.horarioRow}>
@@ -457,8 +378,8 @@ export default function ScanIA() {
                     style={[styles.sheetInput, styles.horarioInput]}
                     value={horarioRega}
                     onChangeText={setHorarioRega}
-                    placeholderTextColor={COR_CINZA_CLARO}
                     placeholder="08:00"
+                    placeholderTextColor={COR_CINZA_CLARO}
                     keyboardType="numbers-and-punctuation"
                     maxLength={5}
                   />
@@ -466,7 +387,6 @@ export default function ScanIA() {
                 </View>
               </View>
 
-              {/* Dias da semana */}
               <View style={styles.sheetGrupo}>
                 <Text style={styles.sheetLabel}>DIAS DE REGA</Text>
                 <View style={styles.diasRow}>
@@ -486,12 +406,9 @@ export default function ScanIA() {
                     );
                   })}
                 </View>
-                <Text style={styles.diasHint}>
-                  D=Dom · S=Seg · T=Ter · Q=Qua · Q=Qui · S=Sex · S=Sáb
-                </Text>
+                <Text style={styles.diasHint}>D=Dom · S=Seg · T=Ter · Q=Qua · Q=Qui · S=Sex · S=Sáb</Text>
               </View>
 
-              {/* Diagnóstico de saúde */}
               {saude && (
                 <View style={[styles.saudeResumo, { borderColor: corStatus(saude.status) }]}>
                   <MaterialCommunityIcons name="heart-pulse" size={16} color={corStatus(saude.status)} />
@@ -508,13 +425,8 @@ export default function ScanIA() {
                 </View>
               )}
 
-              {/* Botões */}
               <View style={styles.sheetBotoes}>
-                <TouchableOpacity
-                  style={styles.btnCancelar}
-                  onPress={() => setSheetVisivel(false)}
-                  activeOpacity={0.8}
-                >
+                <TouchableOpacity style={styles.btnCancelar} onPress={() => setSheetVisivel(false)} activeOpacity={0.8}>
                   <Text style={styles.btnCancelarTexto}>Cancelar</Text>
                 </TouchableOpacity>
 
@@ -534,6 +446,7 @@ export default function ScanIA() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
     </View>
   );
 }
