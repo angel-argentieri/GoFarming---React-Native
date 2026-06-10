@@ -19,11 +19,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM",
-        "USE_EXACT_ALARM",
-        "POST_NOTIFICATIONS"
-      ]
+          "RECEIVE_BOOT_COMPLETED",
+          "SCHEDULE_EXACT_ALARM",
+          "USE_EXACT_ALARM",
+          "POST_NOTIFICATIONS"
+        ]
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -50,7 +50,8 @@
           "color": "#B8A8FF",
           "sounds": []
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "router": {
@@ -66,6 +67,3 @@
     "reactCompiler": true
   }
 }
-
-
-

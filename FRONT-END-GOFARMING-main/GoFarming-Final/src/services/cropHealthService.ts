@@ -18,7 +18,7 @@ import { PlantHealth } from '../types/garden';
 // CONFIGURAÇÃO
 // ─────────────────────────────────────────────
 
-const KINDWISE_API_KEY = 'SUA_CHAVE_AQUI'; // 🔑 troque pela sua chave
+const KINDWISE_API_KEY = ''; 
 const BASE_URL = 'https://crop.kindwise.com/api/v1';
 
 // ─────────────────────────────────────────────

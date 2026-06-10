@@ -17,7 +17,7 @@
 // CONFIGURAÇÃO
 // ─────────────────────────────────────────────
 
-const PLANT_ID_API_KEY = 'SUA_CHAVE_AQUI'; // 🔑 troque pela sua chave
+const PLANT_ID_API_KEY = ''; // 🔑 troque pela sua chave
 const BASE_URL = 'https://api.plant.id/v3';
 
 // ─────────────────────────────────────────────
